@@ -11,7 +11,7 @@ var http         = require('http'),
 
 var argv = require('yargs')
   .usage('Usage: $0 [options]')
-  .example('$0 -f foo.js', 'proxy requests to ')
+  .example('$0 -t http://localhost:12345 -o https://localhost:8443 -c /var/lib/openshift/openshift.local.config/master/ca.crt', 'proxy requests to http://localhost:12345, authenticating against openshift at https://localhost:8443 with CA certificate /var/lib/openshift/openshift.local.config/master/ca/crt')
   .demand('t')
   .alias('t', 'target')
   .nargs('t', 1)
