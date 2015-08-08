@@ -1,0 +1,19 @@
+{
+  "name": "openshift-auth-proxy",
+  "version": "0.0.1",
+  "description": "Reverse proxy to authorize requests against OpenShift 3",
+  "main": "openshift-auth-proxy.js",
+  "bin": "./openshift-auth-proxy.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jimmi Dyson <jimmidyson@gmail.com>",
+  "homepage": "https://github.com/fabric8io/openshift-auth-proxy",
+  "repository": "fabric8io/openshift-auth-proxy",
+  "bugs": "https://github.com/fabric8io/openshift-auth-proxy/issues",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "http-proxy": "^1.11.1",
+    "request": "^2.60.0"
+  }
+}
