@@ -13,7 +13,11 @@
   "bugs": "https://github.com/fabric8io/openshift-auth-proxy/issues",
   "license": "Apache-2.0",
   "dependencies": {
+    "finalhandler": "^0.4.0",
     "http-proxy": "^1.11.1",
-    "request": "^2.60.0"
+    "morgan": "^1.6.1",
+    "request": "^2.60.0",
+    "url-join": "0.0.1",
+    "yargs": "^3.18.0"
   }
 }
