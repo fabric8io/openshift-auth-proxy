@@ -31,11 +31,15 @@ var argv = require('yargs')
   .describe('server-key', 'Key file to use to listen for TLS')
   .implies('server-certificate', 'server-key')
   .implies('server-key', 'server-certificate')
+  .demand('header')
+  .nargs('header', 1)
+  .describe('header', 'Header to set the username on for the proxied request')
   .help('h')
   .alias('h', 'help')
   .epilog('copyright 2015')
   .defaults({
-    port: 8080
+    port: 8080,
+    header: 'X-WEBAUTH-USER'
   })
   .argv;
 
@@ -50,7 +54,7 @@ if (argv['target-ca']) {
 }
 
 proxy.on('proxyReq', function(proxyReq, req, res, options) {
-  proxyReq.setHeader('X-WEBAUTH-USER', options.user.metadata.name);
+  proxyReq.setHeader(argv.header, options.user.metadata.name);
 });
 
 proxy.on('error', function(e) {
