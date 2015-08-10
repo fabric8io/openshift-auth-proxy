@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 var express        = require('express'),
-    session        = require('express-session'),
     sessions       = require('client-sessions'),
     passport       = require('passport'),
     OAuth2Strategy = require('passport-oauth2'),
@@ -35,6 +34,9 @@ var argv = require('yargs')
   .demand('session-active-duration')
   .nargs('session-active-duration', 1)
   .describe('session-active-duration', 'Active duration for encrypted session cookies')
+  .demand('session-ephemeral')
+  .nargs('session-ephemeral', 1)
+  .describe('session-ephemeral', 'Duration for encrypted session cookies - set to -1 to delete when browser closes')
   .demand('callback-url')
   .nargs('callback-url', 1)
   .describe('callback-url', 'oAuth callback URL')
@@ -66,6 +68,7 @@ var argv = require('yargs')
     'session-secret': 'generated',
     'session-duration': parseDuration('1h'),
     'session-active-duration': parseDuration('5m'),
+    'session-ephemeral': false,
     'user-header': 'REMOTE_USER'
   })
   .argv;
@@ -140,7 +143,10 @@ app.use(sessions({
   requestKey: 'session',
   secret: argv['session-secret'], // should be a large unguessable string
   duration: parseDuration('' + argv['session-duration']), // how long the session will stay valid in ms
-  activeDuration: parseDuration('' + argv['session-active-duration']) // if expiresIn < activeDuration, the session will be extended by activeDuration milliseconds
+  activeDuration: parseDuration('' + argv['session-active-duration']), // if expiresIn < activeDuration, the session will be extended by activeDuration milliseconds,
+  cookie: {
+    ephemeral: argv['session-ephemeral']
+  }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
