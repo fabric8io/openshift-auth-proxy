@@ -21,6 +21,7 @@
     "morgan": "^1.6.1",
     "parse-duration": "^0.1.1",
     "passport": "^0.2.2",
+    "passport-http-bearer": "^1.0.1",
     "passport-oauth2": "^1.1.2",
     "request": "^2.60.0",
     "url-join": "0.0.1",

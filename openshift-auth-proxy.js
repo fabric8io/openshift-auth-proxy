@@ -4,6 +4,7 @@ var express        = require('express'),
     sessions       = require('client-sessions'),
     passport       = require('passport'),
     OAuth2Strategy = require('passport-oauth2'),
+    BearerStrategy = require('passport-http-bearer'),
     httpProxy      = require('http-proxy'),
     https          = require('https'),
     urljoin        = require('url-join'),
@@ -22,6 +23,10 @@ var argv = require('yargs')
   .demand('listen-port')
   .nargs('listen-port', 1)
   .describe('listen-port', 'Port to listen on')
+  .demand('auth-mode')
+  .nargs('auth-mode', 1)
+  .describe('auth-mode', 'Auth mode')
+  .choices('auth-mode', ['oauth2', 'bearer'])
   .demand('user-header')
   .nargs('user-header', 1)
   .describe('user-header', 'Header to set the user name on the proxied request')
@@ -69,7 +74,8 @@ var argv = require('yargs')
     'session-duration': parseDuration('1h'),
     'session-active-duration': parseDuration('5m'),
     'session-ephemeral': false,
-    'user-header': 'REMOTE_USER'
+    'user-header': 'REMOTE_USER',
+    'auth-mode': 'oauth2'
   })
   .argv;
 
@@ -83,40 +89,52 @@ https.globalAgent.options.ca = cas;
 
 var openshiftUserUrl = urljoin(argv['openshift-master'], '/oapi/v1/users/~');
 
-passport.use(new OAuth2Strategy({
-    authorizationURL: urljoin(argv['openshift-master'], '/oauth/authorize'),
-    tokenURL: urljoin(argv['openshift-master'], '/oauth/token'),
-    clientID: argv['client-id'],
-    clientSecret: argv['client-secret'],
-    callbackURL: argv['callback-url']
-  },
-  function(accessToken, refreshToken, profile, done) {
-    if (!accessToken) {
-      done();
-    }
-    var authOptions = {
-      url: openshiftUserUrl,
-      headers: {
-        authorization: 'Bearer ' + accessToken
-      }
-    };
-    var authReq = request.get(authOptions);
-    authReq.on('response', function(authRes) {
-      if (authRes.statusCode != 200) {
-        done();
-      } else {
-        var data = '';
-        authRes.on('data', function (chunk){
-          data += chunk;
-        });
-        authRes.on('end',function(){
-          var user = JSON.parse(data);
-          done(null, user);
-        });
-      }
-    });
+var validateBearerToken = function(accessToken, refreshToken, profile, done) {
+  if (!accessToken) {
+    done();
   }
-));
+  var authOptions = {
+    url: openshiftUserUrl,
+    headers: {
+      authorization: 'Bearer ' + accessToken
+    }
+  };
+  var authReq = request.get(authOptions);
+  authReq.on('response', function(authRes) {
+    if (authRes.statusCode != 200) {
+      done();
+    } else {
+      var data = '';
+      authRes.on('data', function (chunk){
+        data += chunk;
+      });
+      authRes.on('end',function(){
+        var user = JSON.parse(data);
+        done(null, user);
+      });
+    }
+  });
+};
+
+switch(argv['auth-mode']) {
+  case 'oauth2':
+    passport.use(new OAuth2Strategy({
+        authorizationURL: urljoin(argv['openshift-master'], '/oauth/authorize'),
+        tokenURL: urljoin(argv['openshift-master'], '/oauth/token'),
+        clientID: argv['client-id'],
+        clientSecret: argv['client-secret'],
+        callbackURL: argv['callback-url']
+      },
+      validateBearerToken
+    ));
+  case 'bearer':
+    passport.use(new BearerStrategy(
+      function(token, done) {
+        validateBearerToken(token, null, null, done);
+      }
+    ));
+};
+
 
 passport.serializeUser(function(user, done) {
   done(null, user);
@@ -138,32 +156,42 @@ var app = express();
 
 app.use(morgan('combined'))
 
-app.use(sessions({
-  cookieName: 'openshift-auth-proxy-session',
-  requestKey: 'session',
-  secret: argv['session-secret'], // should be a large unguessable string
-  duration: parseDuration('' + argv['session-duration']), // how long the session will stay valid in ms
-  activeDuration: parseDuration('' + argv['session-active-duration']), // if expiresIn < activeDuration, the session will be extended by activeDuration milliseconds,
-  cookie: {
-    ephemeral: argv['session-ephemeral']
-  }
-}));
-app.use(passport.initialize());
-app.use(passport.session());
+var useSession = argv['auth-mode'] === 'oauth2';
 
-app.get(argv['callback-url'], function(req, res) {
-  var returnTo = req.session.returnTo;
-  passport.authenticate('oauth2')(req, res, function() {
-    res.redirect(returnTo || '/');
+if (useSession) {
+  app.use(sessions({
+    cookieName: 'openshift-auth-proxy-session',
+    requestKey: 'session',
+    secret: argv['session-secret'], // should be a large unguessable string
+    duration: parseDuration('' + argv['session-duration']), // how long the session will stay valid in ms
+    activeDuration: parseDuration('' + argv['session-active-duration']), // if expiresIn < activeDuration, the session will be extended by activeDuration milliseconds,
+    cookie: {
+      ephemeral: argv['session-ephemeral']
+    }
+  }));
+
+  app.use(passport.initialize());
+
+  app.use(passport.session());
+
+  app.get(argv['callback-url'], function(req, res) {
+    var returnTo = req.session.returnTo;
+    passport.authenticate(argv['auth-mode'])(req, res, function() {
+      res.redirect(returnTo || '/');
+    });
   });
-});
+} else {
+  app.use(passport.initialize());
+}
 
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
   }
-  req.session.returnTo = req.path;
-  passport.authenticate('oauth2')(req, res, next);
+  if (useSession) {
+    req.session.returnTo = req.path;
+  }
+  passport.authenticate(argv['auth-mode'], {session: useSession})(req, res, next);
 }
 
 proxy.on('proxyReq', function(proxyReq, req, res, options) {

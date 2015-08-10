@@ -13,6 +13,8 @@ Options:
   --target                   Target to proxy to                       [required]
   --target-ca                CA used to valid target server
   --listen-port              Port to listen on        [required] [default: 3000]
+  --auth-mode                Auth mode
+                    [required] [choices: "oauth2", "bearer"] [default: "oauth2"]
   --user-header              Header to set the user name on the proxied request
                                              [required] [default: "REMOTE_USER"]
   --session-secret           Secret for encrypted session cookies
