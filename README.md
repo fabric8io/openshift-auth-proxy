@@ -10,18 +10,28 @@ npm install -g openshift-auth-proxy
 Usage: openshift-auth-proxy.js [options]
 
 Options:
-  --port                Port to listen on  [required] [default: 8080]
-  --target              Target to proxy to  [required]
-  --target-ca           CA used to valid target server
-  --openshift-master    OpenShift master to authenticate against  [required]
-  --openshift-ca        CA certificate[s] to use  [required]
-  --server-certificate  Certificate file to use to listen for TLS
-  --server-key          Key file to use to listen for TLS
-  --header              Header to set the username on for the proxied request  [required] [default: "X-WEBAUTH-USER"]
-  -h, --help            Show help  [boolean]
-
-Examples:
-  openshift-auth-proxy.js --target http://localhost:12345 --openshift-master https://localhost:8443 --openshift-ca /var/lib/openshift/openshift.local.config/master/ca.crt  proxy requests to http://localhost:12345, authenticating against openshift at https://localhost:8443 with CA certificate /var/lib/openshift/openshift.local.config/master/ca/crt
+  --target                   Target to proxy to                       [required]
+  --target-ca                CA used to valid target server
+  --listen-port              Port to listen on        [required] [default: 3000]
+  --user-header              Header to set the user name on the proxied request
+                                             [required] [default: "REMOTE_USER"]
+  --session-secret           Secret for encrypted session cookies
+                                               [required] [default: "generated"]
+  --session-duration         Duration for encrypted session cookies
+                                                   [required] [default: 3600000]
+  --session-active-duration  Active duration for encrypted session cookies
+                                                    [required] [default: 300000]
+  --callback-url             oAuth callback URL
+                                [required] [default: "/auth/openshift/callback"]
+  --client-id                OAuth client ID                          [required]
+  --client-secret            OAuth client secret                      [required]
+  --openshift-master         OpenShift master to authenticate against
+                                                                      [required]
+  --openshift-ca             CA certificate[s] to use                 [required]
+  --tls-cert                 Certificate file to use to listen for TLS
+                                                                      [required]
+  --tls-key                  Key file to use to listen for TLS        [required]
+  -h, --help                 Show help                                 [boolean]
 
 copyright 2015
 ```

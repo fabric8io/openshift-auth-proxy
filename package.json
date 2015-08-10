@@ -5,6 +5,7 @@
   "main": "openshift-auth-proxy.js",
   "bin": "./openshift-auth-proxy.js",
   "scripts": {
+    "start": "node openshift-auth-proxy.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jimmi Dyson <jimmidyson@gmail.com>",
@@ -13,9 +14,16 @@
   "bugs": "https://github.com/fabric8io/openshift-auth-proxy/issues",
   "license": "Apache-2.0",
   "dependencies": {
+    "base64url": "^1.0.4",
+    "client-sessions": "^0.7.0",
+    "express": "^4.13.3",
+    "express-session": "^1.11.3",
     "finalhandler": "^0.4.0",
     "http-proxy": "^1.11.1",
     "morgan": "^1.6.1",
+    "parse-duration": "^0.1.1",
+    "passport": "^0.2.2",
+    "passport-oauth2": "^1.1.2",
     "request": "^2.60.0",
     "url-join": "0.0.1",
     "yargs": "^3.18.0"
