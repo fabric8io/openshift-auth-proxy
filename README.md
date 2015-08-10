@@ -21,6 +21,8 @@ Options:
                                                    [required] [default: 3600000]
   --session-active-duration  Active duration for encrypted session cookies
                                                     [required] [default: 300000]
+  --session-ephemeral        Delete cookies on browser close
+                                                     [required] [default: false]
   --callback-url             oAuth callback URL
                                 [required] [default: "/auth/openshift/callback"]
   --client-id                OAuth client ID                          [required]
