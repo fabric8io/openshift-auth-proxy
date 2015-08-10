@@ -1,13 +1,13 @@
 # OpenShift Authentication Proxy
 A reverse proxy that authenticates the request against OpenShift, retrieving
-user information & setting the configured header with the appopriate details.
+user information & setting the configured header with the appropriate details.
 
 ## Install
 npm install -g openshift-auth-proxy
 
 ## Usage
 ```
-Usage: openshift-auth-proxy.js [options]
+Usage: openshift-auth-proxy [options]
 
 Options:
   --target                   Target to proxy to                       [required]
