@@ -15,68 +15,82 @@ var express        = require('express'),
 
 var argv = require('yargs')
   .usage('Usage: $0 [options]')
-  .demand('target')
-  .nargs('target', 1)
-  .describe('target', 'Target to proxy to')
-  .nargs('target-ca', 1)
-  .describe('target-ca', 'CA used to valid target server')
-  .demand('listen-port')
-  .nargs('listen-port', 1)
-  .describe('listen-port', 'Port to listen on')
-  .demand('auth-mode')
-  .nargs('auth-mode', 1)
-  .describe('auth-mode', 'Auth mode')
-  .choices('auth-mode', ['oauth2', 'bearer'])
-  .demand('user-header')
-  .nargs('user-header', 1)
-  .describe('user-header', 'Header to set the user name on the proxied request')
-  .demand('session-secret')
-  .nargs('session-secret', 1)
-  .describe('session-secret', 'Secret for encrypted session cookies')
-  .demand('session-duration')
-  .nargs('session-duration', 1)
-  .describe('session-duration', 'Duration for encrypted session cookies')
-  .demand('session-active-duration')
-  .nargs('session-active-duration', 1)
-  .describe('session-active-duration', 'Active duration for encrypted session cookies')
-  .demand('session-ephemeral')
-  .nargs('session-ephemeral', 1)
-  .describe('session-ephemeral', 'Delete cookies on browser close')
-  .demand('callback-url')
-  .nargs('callback-url', 1)
-  .describe('callback-url', 'oAuth callback URL')
-  .demand('client-id')
-  .nargs('client-id', 1)
-  .describe('client-id', 'OAuth client ID')
-  .demand('client-secret')
-  .nargs('client-secret', 1)
-  .describe('client-secret', 'OAuth client secret')
-  .demand('openshift-master')
-  .describe('openshift-master', 'OpenShift master to authenticate against')
-  .demand('openshift-ca')
-  .nargs('openshift-ca', 1)
-  .describe('openshift-ca', 'CA certificate[s] to use')
-  .demand('tls-cert')
-  .nargs('tls-cert', 1)
-  .describe('tls-cert', 'Certificate file to use to listen for TLS')
-  .demand('tls-key')
-  .nargs('tls-key', 1)
-  .describe('tls-key', 'Key file to use to listen for TLS')
-  .implies('tls-cert', 'tls-key')
-  .implies('tls-key', 'tls-cert')
-  .help('h')
-  .alias('h', 'help')
-  .epilog('copyright 2015')
-  .defaults({
-    'listen-port': 3000,
-    'callback-url': '/auth/openshift/callback',
-    'session-secret': 'generated',
-    'session-duration': parseDuration('1h'),
-    'session-active-duration': parseDuration('5m'),
-    'session-ephemeral': false,
-    'user-header': 'REMOTE_USER',
-    'auth-mode': 'oauth2'
+  .options({
+    target: {
+      describe: 'Target to proxy to',
+      demand: true
+    },
+    'target-ca': {
+      describe: 'CA used to valid target server'
+    },
+    'listen-port': {
+      describe: 'Port to listen on',
+      demand: true,
+      default: 3000
+    },
+    'auth-mode': {
+      describe: 'Auth mode',
+      choices:  ['oauth2', 'bearer'],
+      default: 'oauth2'
+    },
+    'user-header': {
+      describe: 'Header to set the user name on the proxied request',
+      demand: true,
+      default: 'REMOTE_USER'
+    },
+    'session-secret': {
+      describe: 'Secret for encrypted session cookies',
+      demand: true,
+      default: 'generated'
+    },
+    'session-duration': {
+      describe: 'Duration for encrypted session cookies',
+      demand: true,
+      default: parseDuration('1h')
+    },
+    'session-active-duration': {
+      describe: 'Active duration for encrypted session cookies',
+      demand: true,
+      default: parseDuration('5m')
+    },
+    'session-ephemeral': {
+      type: 'boolean',
+      describe: 'Delete cookies on browser close',
+      demand: true,
+      default: false
+    },
+    'callback-url': {
+      describe: 'oAuth callback URL',
+      demand: true,
+      default: '/auth/openshift/callback'
+    },
+    'client-id': {
+      describe: 'OAuth client ID',
+      demand: true
+    },
+    'client-secret': {
+      describe: 'OAuth client secret',
+      demand: true
+    },
+    'openshift-master': {
+      describe: 'OpenShift master to authenticate against',
+      demand: true
+    },
+    'openshift-ca': {
+      describe: 'CA certificate[s] to use',
+      demand: true
+    },
+    'tls-cert': {
+      describe: 'Certificate file to use to listen for TLS',
+      demand: true
+    },
+    'tls-key': {
+      describe: 'Key file to use to listen for TLS',
+      demand: true
+    }
   })
+  .help('help')
+  .epilog('copyright 2015')
   .argv;
 
 if (argv['session-secret'] === 'generated') {

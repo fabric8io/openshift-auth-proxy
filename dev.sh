@@ -1,7 +1,6 @@
 #!/bin/bash
 
 nodemon openshift-auth-proxy.js \
-  --target http://localhost:12345 \
   --tls-cert test-cert.pem \
   --tls-key test-key.pem \
   --openshift-master https://localhost:8443 \
