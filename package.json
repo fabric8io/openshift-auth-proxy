@@ -1,6 +1,6 @@
 {
   "name": "openshift-auth-proxy",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Reverse proxy to authorize requests against OpenShift 3",
   "main": "openshift-auth-proxy.js",
   "bin": "./openshift-auth-proxy.js",
