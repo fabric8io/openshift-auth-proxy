@@ -15,6 +15,7 @@ var express        = require('express'),
 
 var argv = require('yargs')
   .usage('Usage: $0 [options]')
+  .wrap(120)
   .options({
     target: {
       describe: 'Target to proxy to',
