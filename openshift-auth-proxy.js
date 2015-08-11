@@ -20,72 +20,62 @@ var argv = require('yargs')
     target: {
       describe: 'Target to proxy to',
       demand: true
-    },
-    'target-ca': {
+    }, 'use-target-host-header': {
+      describe: 'Change the host header to the target URL',
+      demand: true,
+      type: 'boolean',
+      default: false
+    }, 'target-ca': {
       describe: 'CA used to valid target server'
-    },
-    'listen-port': {
+    }, 'listen-port': {
       describe: 'Port to listen on',
       demand: true,
       default: 3000
-    },
-    'auth-mode': {
+    }, 'auth-mode': {
       describe: 'Auth mode',
       choices:  ['oauth2', 'bearer'],
       default: 'oauth2'
-    },
-    'user-header': {
+    }, 'user-header': {
       describe: 'Header to set the user name on the proxied request',
       demand: true,
       default: 'REMOTE_USER'
-    },
-    'session-secret': {
+    }, 'session-secret': {
       describe: 'Secret for encrypted session cookies',
       demand: true,
       default: 'generated'
-    },
-    'session-duration': {
+    }, 'session-duration': {
       describe: 'Duration for encrypted session cookies',
       demand: true,
       default: parseDuration('1h')
-    },
-    'session-active-duration': {
+    }, 'session-active-duration': {
       describe: 'Active duration for encrypted session cookies',
       demand: true,
       default: parseDuration('5m')
-    },
-    'session-ephemeral': {
+    }, 'session-ephemeral': {
       type: 'boolean',
       describe: 'Delete cookies on browser close',
       demand: true,
       default: false
-    },
-    'callback-url': {
+    }, 'callback-url': {
       describe: 'oAuth callback URL',
       demand: true,
       default: '/auth/openshift/callback'
-    },
-    'client-id': {
+    }, 'client-id': {
       describe: 'OAuth client ID',
       demand: true
-    },
-    'client-secret': {
+    }, 'client-secret': {
       describe: 'OAuth client secret',
       demand: true
-    },
-    'openshift-master': {
+    }, 'openshift-master': {
       describe: 'OpenShift master to authenticate against',
       demand: true
-    },
-    'openshift-ca': {
+    }, 'openshift-ca': {
       describe: 'CA certificate[s] to use',
       demand: true
-    },
-    'tls-cert': {
+    }, 'tls-cert': {
       describe: 'Certificate file to use to listen for TLS',
       demand: true
-    },
-    'tls-key': {
+    }, 'tls-key': {
       describe: 'Key file to use to listen for TLS',
       demand: true
     }
@@ -160,7 +150,8 @@ passport.deserializeUser(function(user, done) {
 });
 
 var proxy = new httpProxy.createProxyServer({
-  target: argv.target
+  target: argv.target,
+  changeOrigin: argv['use-target-host-header']
 });
 
 proxy.on('error', function(e) {
