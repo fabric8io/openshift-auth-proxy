@@ -1,0 +1,5 @@
+.git/
+dev.sh
+Dockerfile
+*.pem
+node_modules/
