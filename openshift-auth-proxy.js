@@ -128,7 +128,7 @@ var validateBearerToken = function(accessToken, refreshToken, profile, done) {
 switch(argv['auth-mode']) {
   case 'oauth2':
     passport.use(new OAuth2Strategy({
-        authorizationURL: urljoin(argv['openshift-master'], '/oauth/authorize'),
+        authorizationURL: urljoin(argv['openshift-public-master'], '/oauth/authorize'),
         tokenURL: urljoin(argv['openshift-master'], '/oauth/token'),
         clientID: argv['client-id'],
         clientSecret: argv['client-secret'],
