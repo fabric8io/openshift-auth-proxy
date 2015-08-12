@@ -68,6 +68,10 @@ var argv = require('yargs')
       demand: true
     }, 'openshift-master': {
       describe: 'OpenShift master to authenticate against',
+      demand: true,
+      default: 'https://kubernetes.default.svc'
+    }, 'openshift-public-master': {
+      describe: 'Public master address to redirect to',
       demand: true
     }, 'openshift-ca': {
       describe: 'CA certificate[s] to use',
