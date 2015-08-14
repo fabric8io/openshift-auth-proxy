@@ -1,6 +1,6 @@
-FROM node:0.12.7
+FROM node:0.10.36
 
-MAINTAINER Jimmi Dyson <jimmidyson@gmail.com>
+MAINTAINER Luke Meyer <lmeyer@redhat.com>
 
 ENTRYPOINT ["openshift-auth-proxy"]
 
