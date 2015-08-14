@@ -74,15 +74,15 @@ var argv = require('yargs')
       describe: 'OAuth client secret',
       demand: true,
       default: process.env.OAP_CLIENT_SECRET_FILE || 'secret/client-secret'
-    }, 'openshift-master': {
+    }, 'master-url': {
       describe: 'Internal master address proxy will authenticate against',
       demand: true,
-      default: process.env.OAP_OPENSHIFT_MASTER || 'https://kubernetes.default.svc.cluster.local:8443'
-    }, 'openshift-public-master': {
+      default: process.env.OAP_MASTER_URL || 'https://kubernetes.default.svc.cluster.local:8443'
+    }, 'public-master-url': {
       describe: 'Public master address for redirecting clients to',
       demand: true,
-      default: process.env.OAP_OPENSHIFT_PUBLIC_MASTER
-    }, 'openshift-ca': {
+      default: process.env.OAP_PUBLIC_MASTER_URL
+    }, 'master-ca': {
       describe: 'CA certificate[s] to validate connection to the master',
       demand: true,
       default: process.env.OAP_MASTER_CA_FILE || 'secret/master-ca'
@@ -115,7 +115,9 @@ var argv = require('yargs')
 //
 var sessionSecret;
 try {
-  fs.readFileSync(argv['session-secret'])
+  sessionSecret = fs.readFileSync(argv['session-secret'])
+} catch(err) {
+  console.error("error reading session secret: %s", JSON.stringify(e));
 } finally { // just ignore if the file is not there
   if (sessionSecret == null ) {
     console.error("generating session secret (will not work with scaled service)");
@@ -123,7 +125,7 @@ try {
   }
 }
 var clientSecret = fs.readFileSync(argv['client-secret'])
-var masterCA = fs.readFileSync(argv['openshift-ca'])
+var masterCA = fs.readFileSync(argv['master-ca'])
 var mutualTlsCa;
 try { // it's optional...
   mutualTlsCa = fs.readFileSync(argv['mutual-tls-ca'])
@@ -146,7 +148,7 @@ cas.push(masterCA);
 https.globalAgent.options.ca = cas;
 
 // where to get OpenShift user information for current auth
-var openshiftUserUrl = urljoin(argv['openshift-master'], '/oapi/v1/users/~');
+var openshiftUserUrl = urljoin(argv['master-url'], '/oapi/v1/users/~');
 
 
 //
@@ -214,8 +216,6 @@ var setupOauth = function(app) {
       res.redirect(returnTo || '/');
     });
   });
-  passport.serializeUser(userSerialization);
-  passport.deserializeUser(userSerialization);
 }
 
 var useSession = false;
@@ -247,6 +247,7 @@ switch(argv['auth-mode']) {
   case 'oauth2':
     useSession = true;
     setupOauth(app);
+    // NO break
   case 'bearer':
     passport.use(new BearerStrategy(
       function(token, done) {
@@ -256,6 +257,7 @@ switch(argv['auth-mode']) {
     app.use(passport.initialize());
     passport.serializeUser(userSerialization);
     passport.deserializeUser(userSerialization);
+    break;
   case 'mutual_tls':
     if (mutualTlsCa == null) {
       throw "must supply 'mutual-tls-ca' to validate client connection";
@@ -268,11 +270,13 @@ switch(argv['auth-mode']) {
         return next();
       }
     };
+    break;
   case 'dummy':
     req.user.metadata.name = 'dummy';
     ensureAuthenticated = function(req, res, next) {
         return next();
     };
+    break;
 };
 
 
