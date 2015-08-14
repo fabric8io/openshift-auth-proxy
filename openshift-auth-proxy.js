@@ -17,87 +17,148 @@ var argv = require('yargs')
   .usage('Usage: $0 [options]')
   .wrap(120)
   .options({
-    target: {
-      describe: 'Target to proxy to',
-      demand: true
-    }, 'use-target-host-header': {
-      describe: 'Change the host header to the target URL',
+    backend: {
+      describe: 'Backend to proxy requests to',
+      demand: true,
+      default: process.env.OAP_BACKEND_URL
+    }, 'use-backend-host-header': {
+      describe: 'Change the host header to the backend URL',
       demand: true,
       type: 'boolean',
       default: false
-    }, 'target-ca': {
-      describe: 'CA used to valid target server'
+    }, 'backend-ca': {
+      describe: 'CA file used to validate backend server if secured'
     }, 'listen-port': {
       describe: 'Port to listen on',
       demand: true,
-      default: 3000
+      default: Number(process.env.OAP_PROXY_PORT || 3000)
     }, 'auth-mode': {
-      describe: 'Auth mode',
-      choices:  ['oauth2', 'bearer'],
-      default: 'oauth2'
+      describe: 'Proxy auth mode',
+      choices:  ['oauth2', 'bearer', 'mutual_tls', 'dummy'],
+      default: process.env.OAP_AUTH_MODE || 'oauth2'
+    }, 'plugin': {
+      describe: 'Plugin for transforming the request/response after authentication',
+      choices:  ['user_header', 'kibana_es', 'es', 'none'],
+      default: process.env.OAP_PLUGIN || 'user_header'
     }, 'user-header': {
-      describe: 'Header to set the user name on the proxied request',
+      describe: 'Header for sending user name on the proxied request',
       demand: true,
-      default: 'REMOTE_USER'
+      default: process.env.OAP_REMOTE_USER_HEADER || 'X-Proxy-Remote-User'
     }, 'session-secret': {
-      describe: 'Secret for encrypted session cookies',
+      describe: 'File containing secret for encrypted session cookies',
       demand: true,
-      default: 'generated'
+      default: process.env.OAP_SESSION_SECRET_FILE || 'secret/session-secret'
     }, 'session-duration': {
       describe: 'Duration for encrypted session cookies',
       demand: true,
-      default: parseDuration('1h')
+      default: parseDuration(process.env.OAP_SESSION_DURATION || '1h')
     }, 'session-active-duration': {
       describe: 'Active duration for encrypted session cookies',
       demand: true,
-      default: parseDuration('5m')
+      default: parseDuration('5m'),
+      default: parseDuration(process.env.OAP_SESSION_ACTIVE_DURATION || '5m')
     }, 'session-ephemeral': {
       type: 'boolean',
       describe: 'Delete cookies on browser close',
       demand: true,
-      default: false
+      default: true
     }, 'callback-url': {
       describe: 'oAuth callback URL',
       demand: true,
-      default: '/auth/openshift/callback'
+      default: process.env.OAP_CALLBACK_URL || '/auth/openshift/callback'
     }, 'client-id': {
       describe: 'OAuth client ID',
-      demand: true
+      demand: true,
+      default: process.env.OAP_CLIENT_ID
     }, 'client-secret': {
       describe: 'OAuth client secret',
-      demand: true
-    }, 'openshift-master': {
-      describe: 'OpenShift master to authenticate against',
       demand: true,
-      default: 'https://kubernetes.default.svc'
+      default: process.env.OAP_CLIENT_SECRET_FILE || 'secret/client-secret'
+    }, 'openshift-master': {
+      describe: 'Internal master address proxy will authenticate against',
+      demand: true,
+      default: process.env.OAP_OPENSHIFT_MASTER || 'https://kubernetes.default.svc.cluster.local:8443'
     }, 'openshift-public-master': {
-      describe: 'Public master address to redirect to',
-      demand: true
+      describe: 'Public master address for redirecting clients to',
+      demand: true,
+      default: process.env.OAP_OPENSHIFT_PUBLIC_MASTER
     }, 'openshift-ca': {
-      describe: 'CA certificate[s] to use',
-      demand: true
-    }, 'tls-cert': {
+      describe: 'CA certificate[s] to validate connection to the master',
+      demand: true,
+      default: process.env.OAP_MASTER_CA_FILE || 'secret/master-ca'
+    }, 'proxy-cert': {
       describe: 'Certificate file to use to listen for TLS',
-      demand: true
-    }, 'tls-key': {
+      demand: true,
+      default: process.env.OAP_PROXY_CERT_FILE || 'secret/proxy-cert'
+    }, 'proxy-key': {
       describe: 'Key file to use to listen for TLS',
-      demand: true
+      demand: true,
+      default: process.env.OAP_PROXY_KEY_FILE || 'secret/proxy-key'
+    }, 'proxy-tlsopts-file': {
+      describe: 'File containing JSON for proxy TLS options',
+      demand: true,
+      default: process.env.OAP_PROXY_TLS_FILE || 'secret/proxy-tls.json'
+    }, 'mutual-tls-ca': {
+      describe: 'CA cert file to use for validating TLS client certs under "mutual_tls" auth method',
+      demand: false,
+      default: process.env.OAP_PROXY_CA_FILE || 'secret/proxy-ca'
     }
   })
   .help('help')
   .epilog('copyright 2015')
   .argv;
 
-if (argv['session-secret'] === 'generated') {
-  require('base64url')(require('crypto').randomBytes(256)).substring(0, 256);
-};
+// ---------------------- config --------------------------
 
+//
+// read in all the files with secrets, keys, certs
+//
+var sessionSecret;
+try {
+  fs.readFileSync(argv['session-secret'])
+} finally { // just ignore if the file is not there
+  if (sessionSecret == null ) {
+    console.error("generating session secret (will not work with scaled service)");
+    sessionSecret = require('base64url')(require('crypto').randomBytes(256)).substring(0, 256);
+  }
+}
+var clientSecret = fs.readFileSync(argv['client-secret'])
+var masterCA = fs.readFileSync(argv['openshift-ca'])
+var mutualTlsCa;
+try { // it's optional...
+  mutualTlsCa = fs.readFileSync(argv['mutual-tls-ca'])
+} catch(err) {
+  console.log("No CA read for mutual TLS.");
+}
+var proxyTLS = {};
+try { // also optional TLS overrides (ciphersuite etc)
+  proxyTLS = fs.readFileSync(argv['proxy-tlsopts-file'])
+} finally {
+  proxyTLS['key'] = fs.readFileSync(argv['proxy-key']);
+  proxyTLS['cert'] = fs.readFileSync(argv['proxy-cert']);
+}
+
+//
+// ensure we validate connecions to master w/ master CA
+//
 var cas = https.globalAgent.options.ca || [];
-cas.push(fs.readFileSync(argv['openshift-ca']));
+cas.push(masterCA);
 https.globalAgent.options.ca = cas;
 
+// where to get OpenShift user information for current auth
 var openshiftUserUrl = urljoin(argv['openshift-master'], '/oapi/v1/users/~');
 
+
+//
+// ---------------------- passport auth --------------------------
+//
+
+//
+// set up for passport authentication if needed
+//
+function userSerialization(user, done) {
+  done(null, user);
+}
 var validateBearerToken = function(accessToken, refreshToken, profile, done) {
   if (!accessToken) {
     done();
@@ -125,50 +186,16 @@ var validateBearerToken = function(accessToken, refreshToken, profile, done) {
   });
 };
 
-switch(argv['auth-mode']) {
-  case 'oauth2':
-    passport.use(new OAuth2Strategy({
-        authorizationURL: urljoin(argv['openshift-public-master'], '/oauth/authorize'),
-        tokenURL: urljoin(argv['openshift-master'], '/oauth/token'),
-        clientID: argv['client-id'],
-        clientSecret: argv['client-secret'],
-        callbackURL: argv['callback-url']
-      },
-      validateBearerToken
-    ));
-  case 'bearer':
-    passport.use(new BearerStrategy(
-      function(token, done) {
-        validateBearerToken(token, null, null, done);
-      }
-    ));
-};
-
-
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function(user, done) {
-  done(null, user);
-});
-
-var proxy = new httpProxy.createProxyServer({
-  target: argv.target,
-  changeOrigin: argv['use-target-host-header']
-});
-
-proxy.on('error', function(e) {
-  console.error("proxy error: %s", JSON.stringify(e));
-});
-
-var app = express();
-
-app.use(morgan('combined'))
-
-var useSession = argv['auth-mode'] === 'oauth2';
-
-if (useSession) {
+var setupOauth = function(app) {
+  passport.use(new OAuth2Strategy({
+      authorizationURL: urljoin(argv['openshift-public-master'], '/oauth/authorize'),
+      tokenURL: urljoin(argv['openshift-master'], '/oauth/token'),
+      clientID: argv['client-id'],
+      clientSecret: argv['client-secret'],
+      callbackURL: argv['callback-url']
+    },
+    validateBearerToken
+  ));
   app.use(sessions({
     cookieName: 'openshift-auth-proxy-session',
     requestKey: 'session',
@@ -179,22 +206,20 @@ if (useSession) {
       ephemeral: argv['session-ephemeral']
     }
   }));
-
   app.use(passport.initialize());
-
   app.use(passport.session());
-
   app.get(argv['callback-url'], function(req, res) {
     var returnTo = req.session.returnTo;
     passport.authenticate(argv['auth-mode'])(req, res, function() {
       res.redirect(returnTo || '/');
     });
   });
-} else {
-  app.use(passport.initialize());
+  passport.serializeUser(userSerialization);
+  passport.deserializeUser(userSerialization);
 }
 
-function ensureAuthenticated(req, res, next) {
+var useSession = false;
+var ensureAuthenticated = function(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
   }
@@ -204,6 +229,63 @@ function ensureAuthenticated(req, res, next) {
   passport.authenticate(argv['auth-mode'], {session: useSession})(req, res, next);
 }
 
+
+//
+// ---------------------- proxy and handler --------------------------
+//
+
+//
+// Create the handler for proxy server requests
+//
+var app = express();
+app.use(morgan('combined'))
+
+//
+// Implement the configured authentication method
+//
+switch(argv['auth-mode']) {
+  case 'oauth2':
+    useSession = true;
+    setupOauth(app);
+  case 'bearer':
+    passport.use(new BearerStrategy(
+      function(token, done) {
+        validateBearerToken(token, null, null, done);
+      }
+    ));
+    app.use(passport.initialize());
+    passport.serializeUser(userSerialization);
+    passport.deserializeUser(userSerialization);
+  case 'mutual_tls':
+    if (mutualTlsCa == null) {
+      throw "must supply 'mutual-tls-ca' to validate client connection";
+    }
+    proxyTLS['ca'] = mutualTlsCa;
+    proxyTLS['requestCert'] = true;
+    proxyTLS['rejectUnauthorized'] = true;
+    ensureAuthenticated = function(req, res, next) {
+      if (req.isAuthenticated()) { // TODO: applies here?
+        return next();
+      }
+    };
+  case 'dummy':
+    req.user.metadata.name = 'dummy';
+    ensureAuthenticated = function(req, res, next) {
+        return next();
+    };
+};
+
+
+//
+// Set up the proxy server to delegate to our handler
+//
+var proxy = new httpProxy.createProxyServer({
+  target: argv.backend,
+  changeOrigin: argv['use-backend-host-header']
+});
+proxy.on('error', function(e) {
+  console.error("proxy error: %s", JSON.stringify(e));
+});
 proxy.on('proxyReq', function(proxyReq, req, res, options) {
   proxyReq.setHeader(argv['user-header'], req.user.metadata.name);
 });
@@ -212,8 +294,5 @@ app.all('*', ensureAuthenticated, function(req, res) {
   proxy.web(req, res);
 });
 
-https.createServer({
-  key: fs.readFileSync(argv['tls-key']),
-  cert: fs.readFileSync(argv['tls-cert'])
-}, app).listen(argv['listen-port']);
+https.createServer(proxyTLS, app).listen(argv['listen-port']);
 
