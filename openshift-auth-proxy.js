@@ -5,7 +5,7 @@ var express        = require('express'),
     morgan         = require('morgan'),
     config         = require('./lib/config'),
     authHandlers   = require('./lib/authHandlers'),
-    kibanaHandlers = require('./lib/kibanaHandlers');
+    kibanaHandlers = require('./lib/kibanaHandlers'),
     proxy          = require('./lib/proxy');
 
 // Define the express app that will handle server requests
