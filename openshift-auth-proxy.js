@@ -5,7 +5,6 @@ var express        = require('express'),
     morgan         = require('morgan'),
     config         = require('./lib/config'),
     authHandlers   = require('./lib/authHandlers'),
-    kibanaHandlers = require('./lib/kibanaHandlers');
     proxy          = require('./lib/proxy');
 
 // Define the express app that will handle server requests
@@ -16,7 +15,6 @@ app.use(morgan('combined'));
 
 // Set up middleware to delegate to our handlers
 authHandlers.setupAuthHandler(app);
-kibanaHandlers.setupTransform(app, authHandlers.userForRequest);
 proxy.setupProxy(app, authHandlers.userForRequest);
 
 // Create the server feeding requests to our express app
