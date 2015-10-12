@@ -18,6 +18,8 @@ authHandlers.setupAuthHandler(app);
 proxy.setupProxy(app, authHandlers.userForRequest);
 
 // Create the server feeding requests to our express app
-console.log('Starting up the proxy with auth mode "%s" and proxy transform "%s".', config['auth-mode'], config.transforms.join() );
-https.createServer(config.files.serverTLS, app).listen(config['listen-port']);
+console.log('Starting up the proxy with auth mode "%s" and proxy transform "%s".',
+		config['auth-mode'], config.transforms.join() );
+https.createServer(config.files.serverTLS, app).
+      listen(config['listen-port']);
 
