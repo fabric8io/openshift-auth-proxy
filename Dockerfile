@@ -1,10 +1,14 @@
 FROM node:0.10.36
 
-MAINTAINER Luke Meyer <lmeyer@redhat.com>
+MAINTAINER OpenShift Development <dev@lists.openshift.redhat.com>
 
-ENTRYPOINT ["openshift-auth-proxy"]
+ENV APP_DIR=/opt/openshift-auth-proxy
 
-COPY . /opt/openshift-auth-proxy
+COPY . ${APP_DIR}
 
-RUN cd /opt/openshift-auth-proxy \
-    && npm install -g .
+RUN cd ${APP_DIR} && \
+    npm install
+
+WORKDIR ${APP_DIR}
+
+ENTRYPOINT ["/opt/openshift-auth-proxy/run.sh"]
