@@ -42,4 +42,4 @@ cd "${APP_DIR}"
 echo "Using NODE_OPTIONS: '${NODE_OPTIONS}' Memory setting is in MB"
 echo "Running from directory: '$(pwd)'"
 
-exec node ${NODE_OPTIONS} /usr/local/bin/npm start
+exec node ${NODE_OPTIONS} openshift-auth-proxy.js
