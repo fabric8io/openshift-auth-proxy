@@ -1,4 +1,4 @@
-FROM node:0.10.36
+FROM node:4.7.2
 
 MAINTAINER OpenShift Development <dev@lists.openshift.redhat.com>
 
