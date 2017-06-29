@@ -12,8 +12,6 @@ BYTES_PER_GIG="$((1024 * BYTES_PER_MEG))"
 
 DEFAULT_MIN="$((64 * BYTES_PER_MEG))" #This is a guess
 
-export NODE_OPTIONS=""
-
 if echo "${OCP_AUTH_PROXY_MEMORY_LIMIT:-}" | grep -qE "^([[:digit:]]+)([GgMm])?i?$"; then
     num="$(echo "${OCP_AUTH_PROXY_MEMORY_LIMIT}" | grep -oE "^[[:digit:]]+")"
     unit="$(echo "${OCP_AUTH_PROXY_MEMORY_LIMIT}" | grep -oE "[GgMm]" || echo "")"
@@ -30,8 +28,7 @@ if echo "${OCP_AUTH_PROXY_MEMORY_LIMIT:-}" | grep -qE "^([[:digit:]]+)([GgMm])?i
         num="${DEFAULT_MIN}"
     fi
 
-    NODE_OPTIONS="--max-old-space-size=$((num / BYTES_PER_MEG))"
-    export NODE_OPTIONS
+    export NODE_OPTIONS="${NODE_OPTIONS:---max_old_space_size=$((num / BYTES_PER_MEG))}"
 else
     echo "Unable to process the OCP_AUTH_PROXY_MEMORY_LIMIT: '${OCP_AUTH_PROXY_MEMORY_LIMIT}'."
     echo "It must be a number, optionally followed by 'G'(Gigabytes) or 'M' (Megabytes), e.g. 64M"
