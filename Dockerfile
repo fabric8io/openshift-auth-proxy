@@ -11,4 +11,4 @@ RUN cd ${APP_DIR} && \
 
 WORKDIR ${APP_DIR}
 
-ENTRYPOINT ["/opt/openshift-auth-proxy/run.sh"]
+ENTRYPOINT ["./run.sh"]
