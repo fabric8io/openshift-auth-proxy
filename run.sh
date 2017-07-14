@@ -15,6 +15,9 @@ DEFAULT_MIN="$((64 * BYTES_PER_MEG))" #This is a guess
 if echo "${OCP_AUTH_PROXY_MEMORY_LIMIT:-}" | grep -qE "^([[:digit:]]+)([GgMm])?i?$"; then
     num="$(echo "${OCP_AUTH_PROXY_MEMORY_LIMIT}" | grep -oE "^[[:digit:]]+")"
     unit="$(echo "${OCP_AUTH_PROXY_MEMORY_LIMIT}" | grep -oE "[GgMm]" || echo "")"
+    
+    #set max_old_space_size to half of memory limit to allow some heap for other V8 spaces
+    num=$((num/2))
 
     if [ "${unit}" = "G" ] || [ "${unit}" = "g" ]; then
         num="$((num * BYTES_PER_GIG))" # enables math to work out for odd Gi
