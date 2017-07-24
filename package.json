@@ -27,6 +27,7 @@
     "request": "^2.60.0",
     "url-join": "0.0.1",
     "yargs": "^3.18.0",
+    "lru-cache": "^4.0.2",
     "memcached": "2.2.2"
   }
 }
