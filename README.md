@@ -20,8 +20,7 @@ Options:
                                                                                           [default: "secret/backend-ca"]
   --client-cert              Client certificate file for mutual TLS to the backend URL (if needed)
                                                                                          [default: "secret/client-cert"]
-  --client-key               Client key file for mutual TLS to the backend URL (if needed)
-                                                                                          [default: "secret/client-key"]
+  --client-key               Client key file for mutual TLS to the backend URL (if needed)[default: "secret/client-key"]
   --auth-mode                Proxy auth mode    [choices: "oauth2", "bearer", "mutual_tls", "dummy"] [default: "oauth2"]
   --mutual-tls-ca            CA cert file to use for validating TLS client certs under "mutual_tls" auth method
                                                                                            [default: "secret/mutual-ca"]
@@ -38,13 +37,17 @@ Options:
   --master-url               Internal master address proxy will authenticate against for oauth/bearer
                                                           [default: "https://kubernetes.default.svc.cluster.local:8443"]
   --master-ca                CA certificate(s) file to validate connection to the master   [default: "secret/master-ca"]
-  --transform                Transform name(s) to apply to the request/response after authentication [choices: "
-                             user_header", "token_header", "none"]                              [default: "user_header"]
+  --transform                Transform name(s) to apply to the request/response after authentication [choices:
+                             "user_header", "token_header", "none"]                [default: "user_header,token_header"]
   --user-header              Header for sending user name on the proxied request        [default: "X-Proxy-Remote-User"]
   --trust-remote-user        Use the user-header from the proxied request (if set) as the user for the backend request.
                                                                                                                [boolean]
   --debug                    Show extra debug information at startup and during operations                     [boolean]
+  --user-token-cache-size    Determine the size of the cache for the user tokens                           [default: 10]
+  --logging-format           Update the Morgan Logging Format for auditing                         [default: "combined"]
   --help                     Show help                                                                         [boolean]
+
+
 
 All of these parameters can be set via corresponding environment variables.
 

@@ -10,8 +10,8 @@ var express        = require('express'),
 // Define the express app that will handle server requests
 var app = express();
 
-// log requests in standard httpd "combined" format
-app.use(morgan('combined'));
+// log requests using user defined format. Default is 'combined'
+app.use(morgan(config['logging-format']));
 
 // Set up middleware to delegate to our handlers
 authHandlers.setupAuthHandler(app);
